@@ -1,10 +1,33 @@
 #include <iostream>
 #include <string>
 #include <set>
+#include <map>
+#include <vector>
 #include <sstream>
 #include <cctype>
 
 using namespace std;
+
+// Submission record
+struct Submission {
+    string problem;
+    string team;
+    string status;
+    int time;
+
+    Submission(const string& p, const string& t, const string& s, int tm)
+        : problem(p), team(t), status(s), time(tm) {}
+};
+
+// Per-problem state for a team
+struct ProblemState {
+    bool solved = false;
+    int solve_time = 0;
+    int wrong_attempts = 0;  // Wrong attempts before first AC
+    int total_submissions = 0;
+
+    ProblemState() : solved(false), solve_time(0), wrong_attempts(0), total_submissions(0) {}
+};
 
 class ICPCManagementSystem {
 private:
@@ -12,6 +35,10 @@ private:
     bool competition_started;
     int duration_time;
     int problem_count;
+
+    // Submission tracking
+    vector<Submission> submissions;  // All submissions in order
+    map<string, map<string, ProblemState>> team_problems;  // team -> problem -> state
 
     bool isValidTeamName(const string& name) {
         if (name.empty() || name.length() > 20) {
@@ -23,6 +50,37 @@ private:
             }
         }
         return true;
+    }
+
+    // Calculate penalty time for a team's solved problems
+    int calculatePenaltyTime(const string& team_name) {
+        int total_penalty = 0;
+        if (team_problems.find(team_name) == team_problems.end()) {
+            return 0;
+        }
+
+        for (const auto& [problem, state] : team_problems[team_name]) {
+            if (state.solved) {
+                // Penalty = 20 * wrong_attempts + solve_time
+                total_penalty += 20 * state.wrong_attempts + state.solve_time;
+            }
+        }
+        return total_penalty;
+    }
+
+    // Count number of solved problems for a team
+    int countSolvedProblems(const string& team_name) {
+        int count = 0;
+        if (team_problems.find(team_name) == team_problems.end()) {
+            return 0;
+        }
+
+        for (const auto& [problem, state] : team_problems[team_name]) {
+            if (state.solved) {
+                count++;
+            }
+        }
+        return count;
     }
 
 public:
@@ -65,7 +123,26 @@ public:
     }
 
     void submit(const string& problem, const string& team, const string& status, int time) {
-        // TODO: Implement for later milestones
+        // Record the submission
+        submissions.emplace_back(problem, team, status, time);
+
+        // Update team-problem state
+        ProblemState& state = team_problems[team][problem];
+
+        if (!state.solved) {
+            if (status == "Accepted") {
+                // First AC for this problem
+                state.solved = true;
+                state.solve_time = time;
+                // wrong_attempts is already tracked (incremented for each non-AC before this)
+            } else {
+                // Non-AC submission on unsolved problem
+                state.wrong_attempts++;
+            }
+        }
+        // If already solved, we don't update wrong_attempts or solve_time
+
+        state.total_submissions++;
     }
 
     void flush() {
