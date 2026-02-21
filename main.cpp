@@ -275,13 +275,39 @@ public:
     }
 
     void querySubmission(const string& team_name, const string& problem, const string& status) {
-        // TODO: Implement for later milestones
         if (teams.find(team_name) == teams.end()) {
             cout << "[Error]Query submission failed: cannot find the team.\n";
-        } else {
-            cout << "[Info]Complete query submission.\n";
-            cout << "Cannot find any submission.\n";
+            return;
         }
+
+        cout << "[Info]Complete query submission.\n";
+
+        // Search backwards through submissions to find the last matching one
+        for (int i = submissions.size() - 1; i >= 0; i--) {
+            const Submission& sub = submissions[i];
+
+            // Check if this submission matches the criteria
+            if (sub.team != team_name) {
+                continue;
+            }
+
+            // Check problem filter (ALL means any problem)
+            if (problem != "ALL" && sub.problem != problem) {
+                continue;
+            }
+
+            // Check status filter (ALL means any status)
+            if (status != "ALL" && sub.status != status) {
+                continue;
+            }
+
+            // Found a match!
+            cout << sub.team << " " << sub.problem << " " << sub.status << " " << sub.time << "\n";
+            return;
+        }
+
+        // No matching submission found
+        cout << "Cannot find any submission.\n";
     }
 };
 
