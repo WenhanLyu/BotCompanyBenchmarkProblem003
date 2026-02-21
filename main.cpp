@@ -83,6 +83,7 @@ private:
     // Ranking tracking (updated on FLUSH)
     map<string, TeamRanking> current_rankings;  // team -> ranking info
     bool has_flushed;  // Whether FLUSH has been called at least once
+    bool isFrozen;  // Whether the scoreboard is currently frozen
 
     bool isValidTeamName(const string& name) {
         if (name.empty() || name.length() > 20) {
@@ -146,7 +147,7 @@ private:
     }
 
 public:
-    ICPCManagementSystem() : competition_started(false), duration_time(0), problem_count(0), has_flushed(false) {}
+    ICPCManagementSystem() : competition_started(false), duration_time(0), problem_count(0), has_flushed(false), isFrozen(false) {}
 
     void addTeam(const string& team_name) {
         if (competition_started) {
@@ -234,13 +235,27 @@ public:
     }
 
     void freeze() {
-        // TODO: Implement for later milestones
+        if (isFrozen) {
+            cout << "[Error]Freeze failed: scoreboard has been frozen.\n";
+            return;
+        }
+
+        isFrozen = true;
         cout << "[Info]Freeze scoreboard.\n";
     }
 
     void scroll() {
-        // TODO: Implement for later milestones
+        if (!isFrozen) {
+            cout << "[Error]Scroll failed: scoreboard has not been frozen.\n";
+            return;
+        }
+
         cout << "[Info]Scroll scoreboard.\n";
+
+        // TODO: Phase 2 - Output scoreboard before/after scrolling
+
+        // After scrolling, unfreeze the scoreboard
+        isFrozen = false;
     }
 
     void queryRanking(const string& team_name) {
@@ -251,7 +266,10 @@ public:
 
         cout << "[Info]Complete query ranking.\n";
 
-        // TODO: Check if frozen and output warning (for later milestone)
+        // Output warning if frozen
+        if (isFrozen) {
+            cout << "[Warning]Scoreboard is frozen. The ranking may be inaccurate until it were scrolled.\n";
+        }
 
         int ranking;
         if (!has_flushed) {

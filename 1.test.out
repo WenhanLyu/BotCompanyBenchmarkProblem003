@@ -1,0 +1,42 @@
+[Info]Add successfully.
+[Info]Add successfully.
+[Info]Add successfully.
+[Info]Competition starts.
+[Info]Scroll scoreboard.
+[Info]Complete query submission.
+Cannot find any submission.
+[Error]Add failed: competition has started.
+[Error]Add failed: competition has started.
+[Error]Add failed: competition has started.
+[Error]Add failed: competition has started.
+[Error]Start failed: competition has started.
+[Info]Flush scoreboard.
+[Info]Freeze scoreboard.
+[Info]Freeze scoreboard.
+[Info]Complete query ranking.
+team1 NOW AT RANKING 2
+[Info]Flush scoreboard.
+[Info]Complete query ranking.
+team0 NOW AT RANKING 1
+[Info]Scroll scoreboard.
+[Info]Scroll scoreboard.
+[Info]Freeze scoreboard.
+[Info]Complete query ranking.
+team0 NOW AT RANKING 1
+[Info]Complete query ranking.
+team0 NOW AT RANKING 1
+[Info]Freeze scoreboard.
+[Info]Scroll scoreboard.
+[Info]Complete query ranking.
+team0 NOW AT RANKING 1
+[Error]Query ranking failed: cannot find the team.
+[Info]Complete query ranking.
+team2 NOW AT RANKING 3
+[Info]Complete query submission.
+team0 A Accepted 1
+[Info]Complete query submission.
+Cannot find any submission.
+[Info]Complete query submission.
+Cannot find any submission.
+[Error]Query submission failed: cannot find the team.
+[Info]Competition ends.
