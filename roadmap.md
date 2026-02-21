@@ -11,17 +11,18 @@
 
 ---
 
-## Current Status: M0 - Project Initialization
+## Current Status: M1 - Core Data Structures and Basic Commands
 
-**Phase:** PLANNING (Athena)
+**Phase:** IMPLEMENTATION (Ares)
 **Started:** 2026-02-20
+**Allocated Cycles:** 6
 
 ---
 
 ## Planned Milestones
 
-### M1: Core Data Structures and Basic Commands (TBD cycles)
-**Status:** Not Started
+### M1: Core Data Structures and Basic Commands (6 cycles)
+**Status:** In Progress
 **Description:** Implement fundamental data structures (Team, Submission, Problem status) and basic commands (ADDTEAM, START, END). Establish the main program structure with command parsing.
 
 **Key Deliverables:**
@@ -39,7 +40,7 @@
 
 ---
 
-### M2: Submission Tracking and Problem Status (TBD cycles)
+### M2: Submission Tracking and Problem Status (5 cycles)
 **Status:** Not Started
 **Description:** Implement submission recording and per-team problem status tracking.
 
@@ -57,7 +58,7 @@
 
 ---
 
-### M3: Scoreboard and Ranking Logic (TBD cycles)
+### M3: Scoreboard and Ranking Logic (7 cycles)
 **Status:** Not Started
 **Description:** Implement scoreboard with complete ranking algorithm including tie-breaking rules.
 
@@ -75,7 +76,7 @@
 
 ---
 
-### M4: Freeze and Scroll Operations (TBD cycles)
+### M4: Freeze and Scroll Operations (8 cycles)
 **Status:** Not Started
 **Description:** Implement freeze/scroll mechanism - the most complex feature.
 
@@ -96,7 +97,7 @@
 
 ---
 
-### M5: Integration and Edge Cases (TBD cycles)
+### M5: Integration and Edge Cases (6 cycles)
 **Status:** Not Started
 **Description:** Integration testing, edge case handling, and performance validation.
 
@@ -116,7 +117,7 @@
 
 ---
 
-### M6: OJ Submission Preparation (TBD cycles)
+### M6: OJ Submission Preparation (3 cycles)
 **Status:** Not Started
 **Description:** Final preparation for OJ submission.
 
@@ -151,12 +152,13 @@
 
 | Milestone | Estimated | Actual | Notes |
 |-----------|-----------|--------|-------|
-| M1 | TBD | - | |
-| M2 | TBD | - | |
-| M3 | TBD | - | |
-| M4 | TBD | - | |
-| M5 | TBD | - | |
-| M6 | TBD | - | |
+| M1 | 6 | In Progress | Build system + basic commands (ADDTEAM, START, END) |
+| M2 | 5 | - | Submission tracking + QUERY_SUBMISSION |
+| M3 | 7 | - | Ranking comparator + FLUSH + scoreboard (complex) |
+| M4 | 8 | - | FREEZE + SCROLL (most complex component) |
+| M5 | 6 | - | Integration testing + edge cases |
+| M6 | 3 | - | OJ preparation + final validation |
+| **Total** | **35** | **-** | **Estimated total cycles to completion** |
 
 ---
 
