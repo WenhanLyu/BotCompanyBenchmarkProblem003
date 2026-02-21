@@ -5,6 +5,7 @@
 #include <vector>
 #include <sstream>
 #include <cctype>
+#include <algorithm>
 
 using namespace std;
 
@@ -29,6 +30,45 @@ struct ProblemState {
     ProblemState() : solved(false), solve_time(0), wrong_attempts(0), total_submissions(0) {}
 };
 
+// Team ranking info (computed at FLUSH time)
+struct TeamRanking {
+    string team_name;
+    int solved_count;
+    int penalty_time;
+    vector<int> solve_times;  // Sorted in descending order
+    int ranking;
+
+    TeamRanking() : team_name(""), solved_count(0), penalty_time(0), ranking(0) {}
+    TeamRanking(const string& name, int solved, int penalty, const vector<int>& times)
+        : team_name(name), solved_count(solved), penalty_time(penalty), solve_times(times), ranking(0) {}
+};
+
+// Ranking comparator: returns true if team1 ranks HIGHER than team2
+// (i.e., team1 should appear before team2 in ranking order)
+bool compareTeamRanking(const TeamRanking& t1, const TeamRanking& t2) {
+    // 1. More solved problems rank higher
+    if (t1.solved_count != t2.solved_count) {
+        return t1.solved_count > t2.solved_count;
+    }
+
+    // 2. Less penalty time ranks higher
+    if (t1.penalty_time != t2.penalty_time) {
+        return t1.penalty_time < t2.penalty_time;
+    }
+
+    // 3. Compare solve times vector (sorted descending)
+    // Smaller maximum solve time ranks higher
+    size_t min_size = min(t1.solve_times.size(), t2.solve_times.size());
+    for (size_t i = 0; i < min_size; i++) {
+        if (t1.solve_times[i] != t2.solve_times[i]) {
+            return t1.solve_times[i] < t2.solve_times[i];
+        }
+    }
+
+    // 4. Lexicographically smaller team name ranks higher
+    return t1.team_name < t2.team_name;
+}
+
 class ICPCManagementSystem {
 private:
     set<string> teams;
@@ -39,6 +79,10 @@ private:
     // Submission tracking
     vector<Submission> submissions;  // All submissions in order
     map<string, map<string, ProblemState>> team_problems;  // team -> problem -> state
+
+    // Ranking tracking (updated on FLUSH)
+    map<string, TeamRanking> current_rankings;  // team -> ranking info
+    bool has_flushed;  // Whether FLUSH has been called at least once
 
     bool isValidTeamName(const string& name) {
         if (name.empty() || name.length() > 20) {
@@ -83,8 +127,26 @@ private:
         return count;
     }
 
+    // Get solve times for a team (sorted in descending order)
+    vector<int> getSolveTimes(const string& team_name) {
+        vector<int> times;
+        if (team_problems.find(team_name) == team_problems.end()) {
+            return times;
+        }
+
+        for (const auto& [problem, state] : team_problems[team_name]) {
+            if (state.solved) {
+                times.push_back(state.solve_time);
+            }
+        }
+
+        // Sort in descending order (largest first)
+        sort(times.begin(), times.end(), greater<int>());
+        return times;
+    }
+
 public:
-    ICPCManagementSystem() : competition_started(false), duration_time(0), problem_count(0) {}
+    ICPCManagementSystem() : competition_started(false), duration_time(0), problem_count(0), has_flushed(false) {}
 
     void addTeam(const string& team_name) {
         if (competition_started) {
@@ -146,8 +208,29 @@ public:
     }
 
     void flush() {
-        // TODO: Implement for later milestones
         cout << "[Info]Flush scoreboard.\n";
+
+        // Compute rankings for all teams
+        vector<TeamRanking> rankings;
+        for (const string& team_name : teams) {
+            int solved = countSolvedProblems(team_name);
+            int penalty = calculatePenaltyTime(team_name);
+            vector<int> times = getSolveTimes(team_name);
+
+            rankings.emplace_back(team_name, solved, penalty, times);
+        }
+
+        // Sort teams by ranking comparator
+        sort(rankings.begin(), rankings.end(), compareTeamRanking);
+
+        // Assign ranking numbers and store
+        current_rankings.clear();
+        for (size_t i = 0; i < rankings.size(); i++) {
+            rankings[i].ranking = i + 1;
+            current_rankings[rankings[i].team_name] = rankings[i];
+        }
+
+        has_flushed = true;
     }
 
     void freeze() {
@@ -161,12 +244,34 @@ public:
     }
 
     void queryRanking(const string& team_name) {
-        // TODO: Implement for later milestones
         if (teams.find(team_name) == teams.end()) {
             cout << "[Error]Query ranking failed: cannot find the team.\n";
-        } else {
-            cout << "[Info]Complete query ranking.\n";
+            return;
         }
+
+        cout << "[Info]Complete query ranking.\n";
+
+        // TODO: Check if frozen and output warning (for later milestone)
+
+        int ranking;
+        if (!has_flushed) {
+            // Before first FLUSH: compute lexicographic ranking
+            vector<string> sorted_teams(teams.begin(), teams.end());
+            sort(sorted_teams.begin(), sorted_teams.end());
+
+            ranking = 1;
+            for (const string& t : sorted_teams) {
+                if (t == team_name) {
+                    break;
+                }
+                ranking++;
+            }
+        } else {
+            // After FLUSH: use stored ranking
+            ranking = current_rankings[team_name].ranking;
+        }
+
+        cout << team_name << " NOW AT RANKING " << ranking << "\n";
     }
 
     void querySubmission(const string& team_name, const string& problem, const string& status) {
