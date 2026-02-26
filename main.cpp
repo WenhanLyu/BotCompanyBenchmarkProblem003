@@ -244,14 +244,6 @@ public:
 
         if (!ps.is_frozen) return;
 
-        // Apply frozen submissions
-        for (const Submission& sub : ps.submissions) {
-            if (sub.time > 0) { // frozen submission marker
-                // Check if this submission was made during freeze
-                // We need to count submissions from the end
-            }
-        }
-
         // Process the frozen submissions
         int frozen_start_idx = ps.submissions.size() - ps.frozen_submissions_count;
         for (size_t i = frozen_start_idx; i < ps.submissions.size(); i++) {
