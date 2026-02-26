@@ -76,6 +76,8 @@ public:
     int solved_count;
     int penalty_time;
     vector<Submission> all_submissions; // All submissions for queries
+    // Phase 3 optimization: Track frozen problems count for O(1) frozen detection
+    int frozen_problems_count;
 
 private:
     // Phase 2 optimization: Cache sorted solve times to avoid O(M log M) per comparison
@@ -94,8 +96,8 @@ private:
     }
 
 public:
-    Team() : name(""), solved_count(0), penalty_time(0), cache_dirty(true) {}
-    Team(string n) : name(n), solved_count(0), penalty_time(0), cache_dirty(true) {}
+    Team() : name(""), solved_count(0), penalty_time(0), cache_dirty(true), frozen_problems_count(0) {}
+    Team(string n) : name(n), solved_count(0), penalty_time(0), cache_dirty(true), frozen_problems_count(0) {}
 
     void addSubmission(const string& problem, SubmitStatus status, int time, bool is_frozen) {
         all_submissions.push_back(Submission(problem, status, time));
@@ -112,6 +114,7 @@ public:
             if (ps.frozen_submissions_count == 1) {
                 ps.is_frozen = true;
                 ps.frozen_wrong_attempts = ps.wrong_attempts;
+                frozen_problems_count++; // Phase 3: Track frozen problems
             }
         } else if (!ps.solved) {
             if (status == ACCEPTED) {
@@ -320,6 +323,7 @@ public:
 
         ps.is_frozen = false;
         ps.frozen_submissions_count = 0;
+        team.frozen_problems_count--; // Phase 3: Update frozen problems count
     }
 
     bool scroll() {
@@ -355,14 +359,8 @@ public:
                 int rank = rank_pair.second;
                 Team& team = teams[team_name];
 
-                // Check if this team has frozen problems
-                bool has_frozen = false;
-                for (const auto& prob_pair : team.problems) {
-                    if (prob_pair.second.is_frozen) {
-                        has_frozen = true;
-                        break;
-                    }
-                }
+                // Phase 3 optimization: O(1) frozen problem detection using counter
+                bool has_frozen = (team.frozen_problems_count > 0);
 
                 if (has_frozen && (lowest_rank == -1 || rank > lowest_rank)) {
                     lowest_rank = rank;
