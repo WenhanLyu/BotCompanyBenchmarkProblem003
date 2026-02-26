@@ -1,61 +1,87 @@
 # Maya - Cycle Notes
 
-## Phase 2: Cache getSolveTimes() Results (COMPLETED)
+## Phase 4: SCROLL Optimization - Old Rankings Map & Ranking Updates (IN PROGRESS)
 
-### Problem
-- `getSolveTimes()` was called O(N log N) times during sort comparison
-- Each call created a new vector, populated it, and sorted it: O(M log M) per call
-- Total complexity during ranking: O(N² log N · M)
-- This was the primary bottleneck after Phase 1 optimization
+### Phase 4.1: Replace old_rankings_map rebuild with vector copy (COMPLETED)
 
-### Solution Implemented
-Added caching mechanism to Team class:
+**Problem:**
+- Lines 346-351 rebuilt TWO full maps every SCROLL iteration:
+  - old_rankings_map: team -> rank mapping (NEVER USED)
+  - old_rank_to_team: rank -> team mapping (used once for lookup)
+- Building maps required O(N log N) insertions for N teams
+- Map lookup was O(log N) vs O(1) for vector access
 
-1. **New private members**:
-   - `cached_solve_times`: Stores pre-sorted solve times
-   - `cache_dirty`: Tracks if cache needs updating
-   - `updateSolveTimesCache()`: Helper to rebuild cache
+**Solution:**
+- Replaced both maps with simple vector copy: `old_rankings = rankings`
+- Vector copy is O(N) with better constants
+- Direct array access for lookup: `old_rankings[new_rank - 1].first` is O(1)
+- Eliminated unused old_rankings_map entirely
 
-2. **Modified getSolveTimes()**:
-   - Returns `const vector<int>&` instead of creating new vector
-   - Lazily updates cache only when dirty
-   - O(1) when cache is valid
+**Performance Results:**
+- **Test 6.in**: 1.6s (Phase 3) → 0.65s (Phase 4.1 only) = **2.46x speedup!**
+- **Total speedup**: 187s → 0.65s = **288x speedup from original**
+- Output verified identical to Phase 3 (correctness maintained)
 
-3. **Cache invalidation triggers**:
-   - `addSubmission()`: When problem is solved (line 103)
-   - `recalculateStats()`: After stats recalculation (line 124)
-   - Note: `unfreezeOneProblem()` is followed by `recalculateStats()`, so coverage is complete
+**Files Modified:**
+- main.cpp:
+  - Lines 346-351: Replaced map building with `vector<pair<string, int>> old_rankings = rankings;`
+  - Lines 410-418: Direct vector access instead of map lookup
 
-4. **Updated comparison functions**:
-   - Changed `vector<int> times_a/b` to `const vector<int>&` in both:
-     - `flush()` comparison (line 234)
-     - `updateRankingsOnly()` comparison (line 275)
-   - Avoids unnecessary vector copies
+### Phase 4.2: Skip updateRankingsOnly() when no problem solved (COMPLETED)
 
-### Performance Results
-- **Test 6.in**: 24.4s (Phase 1) → 1.9s (Phase 2) = **12.8x speedup**
-- **Total speedup from original**: 187s → 1.9s = **98.5x speedup**
-- Test 1.in and 2.in: Output verified correct
-- Test bigger.in: Running...
+**Problem:**
+- updateRankingsOnly() called every SCROLL iteration even when unnecessary
+- Full sort of N teams (O(N log N)) even when unfreezing reveals only wrong attempts
+- Wrong attempts for unsolved problems don't affect ranking (unsolved problems don't contribute to penalty)
 
-### Complexity Improvement
-- **Before**: O(N² log N · M) for ranking comparisons
-- **After**: O(N log N + N·M) where cache is built once per team
+**Solution:**
+- Modified unfreezeOneProblem() to return bool indicating if problem became newly solved
+- Skip updateRankingsOnly() if problem didn't become solved
+- Rationale: If solved_count doesn't change, ranking cannot improve
+- Rankings data structure can be "stale" but still correct since actual rankings unchanged
 
-### Target Status
-- Target for 6.in: <1000ms
-- Current: 1900ms (close, but not quite there yet)
-- This is still a major improvement, additional optimizations may be needed
+**Performance Results:**
+- **Test 6.in**: 0.89s (combined Phase 4.1 + 4.2) < 1.0s target ✓
+- Slight overhead vs Phase 4.1 alone (0.65s → 0.89s) but still meets target
+- Output verified identical to Phase 3 (correctness maintained)
 
-### Files Modified
-- `main.cpp`:
-  - Lines 72-97: Added cache members and methods to Team class
-  - Line 103: Mark cache dirty when problem solved
-  - Line 124: Mark cache dirty after recalculateStats
-  - Lines 122-127: Modified getSolveTimes() to use cache
-  - Lines 234, 275: Use const references in comparisons
+**Files Modified:**
+- main.cpp:
+  - Lines 305-327: Modified unfreezeOneProblem() to return bool
+  - Lines 390-401: Check if problem_solved before calling updateRankingsOnly()
 
-### Next Steps (Phase 3)
-- Optimize frozen problem detection in SCROLL
-- Lines 342-348: Nested loop checking every problem for every team
-- Pre-cache frozen status per team for O(1) lookup
+### Current Status
+
+**Targets:**
+- 6.in: <1000ms → **ACHIEVED** (0.89s = 890ms)
+- bigger.in: <2000ms → **NOT YET ACHIEVED** (still >15s)
+
+**Analysis:**
+- Phase 4.1 provides massive speedup (2.46x) by eliminating map rebuild overhead
+- Phase 4.2 provides conditional updates but with small overhead on 6.in
+- bigger.in may have different characteristics (more problems become solved during unfreeze)
+- Or bigger.in may need additional optimizations not covered in Phase 4 assignment
+
+### Next Steps
+- Consider additional optimizations for bigger.in:
+  - True incremental ranking updates (O(N) instead of O(N log N))
+  - Batch updates (update rankings every K iterations instead of every iteration)
+  - Profile bigger.in to identify remaining bottlenecks
+- Alternative: Verify if <2000ms target is achievable on current hardware with current approach
+
+## Previous Phases Summary
+
+### Phase 3: Optimize Frozen Problem Detection in SCROLL (COMPLETED)
+- Problem: O(N·M) nested loop checking frozen problems
+- Solution: Added frozen_problems_count counter for O(1) lookup
+- Result: 1.9s → 1.6s (1.19x speedup)
+
+### Phase 2: Cache getSolveTimes() Results (COMPLETED)
+- Problem: O(N² log N · M) complexity during ranking
+- Solution: Added caching mechanism to avoid repeated sorting
+- Result: 24.4s → 1.9s (12.8x speedup)
+
+### Phase 1: SCROLL Optimization (COMPLETED)
+- Problem: flush() called in every SCROLL iteration
+- Solution: Added updateRankingsOnly() to avoid recalculation
+- Result: 187s → 24.4s (7.7x speedup)
