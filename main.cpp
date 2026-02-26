@@ -96,8 +96,8 @@ private:
     }
 
 public:
-    Team() : name(""), solved_count(0), penalty_time(0), cache_dirty(true), frozen_problems_count(0) {}
-    Team(string n) : name(n), solved_count(0), penalty_time(0), cache_dirty(true), frozen_problems_count(0) {}
+    Team() : name(""), solved_count(0), penalty_time(0), frozen_problems_count(0), cache_dirty(true) {}
+    Team(string n) : name(n), solved_count(0), penalty_time(0), frozen_problems_count(0), cache_dirty(true) {}
 
     void addSubmission(const string& problem, SubmitStatus status, int time, bool is_frozen) {
         all_submissions.push_back(Submission(problem, status, time));
