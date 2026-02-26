@@ -239,6 +239,37 @@ public:
         return true;
     }
 
+    void unfreezeOneProblem(Team& team, const string& problem_name) {
+        ProblemStatus& ps = team.problems[problem_name];
+
+        if (!ps.is_frozen) return;
+
+        // Apply frozen submissions
+        for (const Submission& sub : ps.submissions) {
+            if (sub.time > 0) { // frozen submission marker
+                // Check if this submission was made during freeze
+                // We need to count submissions from the end
+            }
+        }
+
+        // Process the frozen submissions
+        int frozen_start_idx = ps.submissions.size() - ps.frozen_submissions_count;
+        for (size_t i = frozen_start_idx; i < ps.submissions.size(); i++) {
+            const Submission& sub = ps.submissions[i];
+            if (!ps.solved) {
+                if (sub.status == ACCEPTED) {
+                    ps.solved = true;
+                    ps.solve_time = sub.time;
+                } else {
+                    ps.wrong_attempts++;
+                }
+            }
+        }
+
+        ps.is_frozen = false;
+        ps.frozen_submissions_count = 0;
+    }
+
     bool scroll() {
         if (!is_frozen) {
             cout << "[Error]Scroll failed: scoreboard has not been frozen." << endl;
@@ -254,7 +285,88 @@ public:
         outputScoreboard();
 
         // Perform scroll operation
-        // TODO: Implement full scroll logic
+        while (true) {
+            // Save current rankings to detect changes
+            map<string, int> old_rankings_map;
+            map<int, string> old_rank_to_team;
+            for (const auto& rank_pair : rankings) {
+                old_rankings_map[rank_pair.first] = rank_pair.second;
+                old_rank_to_team[rank_pair.second] = rank_pair.first;
+            }
+
+            // Find lowest-ranked team with frozen problems
+            string target_team = "";
+            int lowest_rank = -1;
+
+            for (const auto& rank_pair : rankings) {
+                const string& team_name = rank_pair.first;
+                int rank = rank_pair.second;
+                Team& team = teams[team_name];
+
+                // Check if this team has frozen problems
+                bool has_frozen = false;
+                for (const auto& prob_pair : team.problems) {
+                    if (prob_pair.second.is_frozen) {
+                        has_frozen = true;
+                        break;
+                    }
+                }
+
+                if (has_frozen && (lowest_rank == -1 || rank > lowest_rank)) {
+                    lowest_rank = rank;
+                    target_team = team_name;
+                }
+            }
+
+            // If no team has frozen problems, we're done
+            if (target_team == "") break;
+
+            // Find the smallest problem name among frozen problems
+            Team& team = teams[target_team];
+            string smallest_problem = "";
+            for (const string& problem_name : problem_names) {
+                if (team.problems.find(problem_name) != team.problems.end() &&
+                    team.problems[problem_name].is_frozen) {
+                    smallest_problem = problem_name;
+                    break;
+                }
+            }
+
+            // Store old ranking
+            int old_rank = lowest_rank;
+
+            // Unfreeze the problem
+            unfreezeOneProblem(team, smallest_problem);
+
+            // Recalculate team stats
+            team.recalculateStats();
+
+            // Flush to update rankings
+            flush();
+
+            // Check if ranking changed
+            int new_rank = -1;
+            for (const auto& rank_pair : rankings) {
+                if (rank_pair.first == target_team) {
+                    new_rank = rank_pair.second;
+                    break;
+                }
+            }
+
+            // If ranking changed (improved), output the change
+            if (new_rank < old_rank) {
+                // Find the team that was at new_rank position before
+                string replaced_team = "";
+                if (old_rank_to_team.find(new_rank) != old_rank_to_team.end()) {
+                    replaced_team = old_rank_to_team[new_rank];
+                }
+
+                if (replaced_team != "") {
+                    cout << target_team << " " << replaced_team << " "
+                         << team.solved_count << " " << team.penalty_time << endl;
+                }
+            }
+        }
 
         // Output scoreboard after scrolling
         outputScoreboard();
@@ -264,7 +376,70 @@ public:
     }
 
     void outputScoreboard() {
-        // TODO: Implement scoreboard output
+        // Get teams in ranking order
+        vector<pair<string, int>> ranked_teams; // (team_name, rank)
+
+        if (rankings.empty()) {
+            // No flush yet, use lexicographic order
+            vector<string> names;
+            for (const auto& pair : teams) {
+                names.push_back(pair.first);
+            }
+            sort(names.begin(), names.end());
+            for (size_t i = 0; i < names.size(); i++) {
+                ranked_teams.push_back({names[i], i + 1});
+            }
+        } else {
+            // Use current rankings
+            ranked_teams = rankings;
+        }
+
+        // Output each team's status
+        for (const auto& rank_pair : ranked_teams) {
+            const string& team_name = rank_pair.first;
+            int rank = rank_pair.second;
+            const Team& team = teams[team_name];
+
+            // Output: team_name ranking solved_count total_penalty
+            cout << team_name << " " << rank << " "
+                 << team.solved_count << " " << team.penalty_time;
+
+            // Output problem statuses (A, B, C, ...)
+            for (const string& problem_name : problem_names) {
+                cout << " ";
+
+                if (team.problems.find(problem_name) == team.problems.end()) {
+                    // No submission to this problem
+                    cout << ".";
+                } else {
+                    const ProblemStatus& ps = team.problems.at(problem_name);
+
+                    if (ps.is_frozen) {
+                        // Problem is frozen: -x/y or 0/y
+                        if (ps.frozen_wrong_attempts == 0) {
+                            cout << "0/" << ps.frozen_submissions_count;
+                        } else {
+                            cout << "-" << ps.frozen_wrong_attempts << "/" << ps.frozen_submissions_count;
+                        }
+                    } else if (ps.solved) {
+                        // Problem is solved: +x or +
+                        if (ps.wrong_attempts == 0) {
+                            cout << "+";
+                        } else {
+                            cout << "+" << ps.wrong_attempts;
+                        }
+                    } else {
+                        // Problem not solved and not frozen: -x or .
+                        if (ps.wrong_attempts == 0) {
+                            cout << ".";
+                        } else {
+                            cout << "-" << ps.wrong_attempts;
+                        }
+                    }
+                }
+            }
+            cout << endl;
+        }
     }
 
     void queryRanking(const string& team_name) {
