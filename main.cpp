@@ -266,14 +266,14 @@ public:
 
     bool scroll() {
         if (!is_frozen) {
-            cout << "[Error]Scroll failed: scoreboard has not been frozen." << endl;
+            cout << "[Error]Scroll failed: scoreboard has not been frozen.";
             return false;
         }
 
         cout << "[Info]Scroll scoreboard." << endl;
 
         // First flush
-        flush();
+        flush(true);
 
         // Output scoreboard before scrolling
         outputScoreboard();
