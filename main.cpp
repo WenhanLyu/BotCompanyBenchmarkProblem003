@@ -183,8 +183,10 @@ public:
         }
     }
 
-    void flush() {
-        cout << "[Info]Flush scoreboard." << endl;
+    void flush(bool silent = false) {
+        if (!silent) {
+            cout << "[Info]Flush scoreboard." << endl;
+        }
 
         // Recalculate all team stats
         for (auto& pair : teams) {
@@ -333,8 +335,8 @@ public:
             // Recalculate team stats
             team.recalculateStats();
 
-            // Flush to update rankings
-            flush();
+            // Flush to update rankings (silently)
+            flush(true);
 
             // Check if ranking changed
             int new_rank = -1;
