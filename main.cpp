@@ -77,8 +77,25 @@ public:
     int penalty_time;
     vector<Submission> all_submissions; // All submissions for queries
 
-    Team() : name(""), solved_count(0), penalty_time(0) {}
-    Team(string n) : name(n), solved_count(0), penalty_time(0) {}
+private:
+    // Phase 2 optimization: Cache sorted solve times to avoid O(M log M) per comparison
+    mutable vector<int> cached_solve_times;
+    mutable bool cache_dirty;
+
+    void updateSolveTimesCache() const {
+        cached_solve_times.clear();
+        for (const auto& pair : problems) {
+            if (pair.second.solved) {
+                cached_solve_times.push_back(pair.second.solve_time);
+            }
+        }
+        sort(cached_solve_times.rbegin(), cached_solve_times.rend()); // Sort in descending order
+        cache_dirty = false;
+    }
+
+public:
+    Team() : name(""), solved_count(0), penalty_time(0), cache_dirty(true) {}
+    Team(string n) : name(n), solved_count(0), penalty_time(0), cache_dirty(true) {}
 
     void addSubmission(const string& problem, SubmitStatus status, int time, bool is_frozen) {
         all_submissions.push_back(Submission(problem, status, time));
@@ -100,6 +117,7 @@ public:
             if (status == ACCEPTED) {
                 ps.solved = true;
                 ps.solve_time = time;
+                cache_dirty = true; // Phase 2: Invalidate cache when problem solved
             } else {
                 ps.wrong_attempts++;
             }
@@ -117,17 +135,16 @@ public:
                 penalty_time += ps.solve_time + 20 * ps.wrong_attempts;
             }
         }
+
+        cache_dirty = true; // Phase 2: Invalidate cache when stats recalculated
     }
 
-    vector<int> getSolveTimes() const {
-        vector<int> times;
-        for (const auto& pair : problems) {
-            if (pair.second.solved) {
-                times.push_back(pair.second.solve_time);
-            }
+    // Phase 2 optimization: Return cached sorted solve times
+    const vector<int>& getSolveTimes() const {
+        if (cache_dirty) {
+            updateSolveTimesCache();
         }
-        sort(times.rbegin(), times.rend()); // Sort in descending order
-        return times;
+        return cached_solve_times;
     }
 };
 
@@ -209,9 +226,9 @@ public:
             if (a->penalty_time != b->penalty_time) {
                 return a->penalty_time < b->penalty_time;
             }
-            // Compare solve times
-            vector<int> times_a = a->getSolveTimes();
-            vector<int> times_b = b->getSolveTimes();
+            // Phase 2 optimization: Use cached sorted solve times (const reference)
+            const vector<int>& times_a = a->getSolveTimes();
+            const vector<int>& times_b = b->getSolveTimes();
 
             size_t min_len = min(times_a.size(), times_b.size());
             for (size_t i = 0; i < min_len; i++) {
@@ -250,9 +267,9 @@ public:
             if (a->penalty_time != b->penalty_time) {
                 return a->penalty_time < b->penalty_time;
             }
-            // Compare solve times
-            vector<int> times_a = a->getSolveTimes();
-            vector<int> times_b = b->getSolveTimes();
+            // Phase 2 optimization: Use cached sorted solve times (const reference)
+            const vector<int>& times_a = a->getSolveTimes();
+            const vector<int>& times_b = b->getSolveTimes();
 
             size_t min_len = min(times_a.size(), times_b.size());
             for (size_t i = 0; i < min_len; i++) {
