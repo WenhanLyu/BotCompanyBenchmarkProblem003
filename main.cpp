@@ -216,7 +216,7 @@ public:
             size_t min_len = min(times_a.size(), times_b.size());
             for (size_t i = 0; i < min_len; i++) {
                 if (times_a[i] != times_b[i]) {
-                    return times_a[i] > times_b[i];
+                    return times_a[i] < times_b[i];
                 }
             }
 
