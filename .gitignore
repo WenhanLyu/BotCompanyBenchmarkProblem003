@@ -19,3 +19,36 @@ code
 # OS files
 .DS_Store
 Thumbs.db
+
+# Test outputs and temporary files
+*.out
+*.time
+test_outputs/
+test_outputs_fixed/
+phase4_test_outputs/
+
+# Profiled executables and related files
+*_profiled*
+
+# Test scripts
+*.sh
+
+# Test input files
+*.in
+
+# Test reports and summaries
+*TEST_REPORT*.md
+*SUMMARY*.md
+*test_results*.md
+*validate*.md
+*validate*.py
+
+# Temporary output files
+small_output.txt
+profile_*.txt
+
+# Test workspace directories
+workspace/
+
+# Alternative executables (keep only 'code')
+main
