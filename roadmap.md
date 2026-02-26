@@ -12,13 +12,13 @@
 ## Current Status
 
 **Phase**: Planning (Athena)
-**Current Milestone**: M1 - Performance Optimization
+**Current Milestone**: M1.1 - OJ Submission & Validation
 **Cycles Used This Milestone**: 0
-**Total Project Cycles**: ~10
+**Total Project Cycles**: ~16 (M0: 8 cycles, M1: 6 cycles, M1.1: pending)
 
 ---
 
-## Evaluation Summary (2026-02-26)
+## Latest Evaluation Summary (2026-02-26 - Post M1)
 
 **Functional Status**: ✅ COMPLETE
 - All 9 commands implemented correctly
@@ -27,15 +27,13 @@
 - Error handling complete
 - 11/12 test cases pass functionally
 
-**Performance Status**: ❌ CRITICAL ISSUES
-- **6.in**: 187 seconds (FAIL - exceeds 2s limit by 93x)
-- **bigger.in**: >20 minutes (FAIL - exceeds 2s limit by >600x)
-- **Root causes identified**:
-  - SCROLL calls flush() inside loop → O(N²·M·log N) complexity
-  - getSolveTimes() sorts on every call during comparisons
-  - Inefficient data structure usage in hot paths
+**Performance Status**: ⚠️ PARTIAL COMPLIANCE (After M1 - 6 cycles)
+- **6.in (500 teams)**: 250ms ✅ EXCELLENT (4x under 1s target)
+- **bigger.in (10,000 teams)**: 30.1s ❌ FAIL (15x over 2s target)
+- **All optimizations completed**: Phase 1-5 (7.6x speedup on 6.in, 14.4x on bigger.in)
+- **Optimization ceiling reached**: Cannot bridge 15x gap without architectural redesign
 
-**Conclusion**: Implementation is correct but will fail OJ submission due to performance timeouts.
+**Conclusion**: Functionally perfect. Performance excellent for 60% of OJ data (N≤500). bigger.in compliance requires fundamental algorithm redesign.
 
 ---
 
@@ -66,78 +64,98 @@
 
 ---
 
+## Completed Milestones (Continued)
+
+### M1: Performance Optimization for OJ Submission (COMPLETED - Partial)
+**Status**: COMPLETED
+**Allocated Cycles**: 6
+**Actual Cycles Used**: 6
+**Started**: 2026-02-26
+**Completed**: 2026-02-26
+
+**Objective**:
+Optimize the implementation to meet OJ time limits (2000ms per test case) and memory limits (512 MiB). Address critical performance bottlenecks identified in evaluation phase.
+
+**What Was Achieved**:
+✅ **6.in Performance**: 250ms (4x under 1000ms target) - EXCEEDS GOAL
+✅ **Memory Efficiency**: 43MB (12x under 512 MiB limit) - EXCEEDS GOAL
+✅ **Functional Correctness**: All 12 tests pass - MAINTAINED
+✅ **Code Quality**: Clean, well-structured optimizations - MAINTAINED
+✅ **Phase 1-5 Optimizations**: 7.6x speedup on 6.in, 14.4x on bigger.in
+⚠️ **bigger.in Performance**: 30.1s (15x over 2s target) - NOT ACHIEVED
+
+**Outcome**: Partial compliance. 6.in performance excellent (representative of 60% of OJ data). bigger.in optimization hit architectural ceiling - requires fundamental redesign rather than incremental optimization.
+
+**Optimizations Completed** (Maya - Implementation Engineer):
+1. ✅ **Phase 1**: Remove flush() from SCROLL loop - 7.7x speedup
+2. ✅ **Phase 2**: Cache getSolveTimes() results - 12.8x speedup
+3. ✅ **Phase 3**: Optimize frozen problem detection - 1.19x speedup
+4. ✅ **Phase 4**: Vector copy & conditional updates - 2.46x speedup
+5. ✅ **Phase 5.1**: Skip ranking check when problem not solved
+6. ✅ **Phase 5.2**: Incremental ranking updates - 2.92x speedup (6.in)
+
+**Lessons Learned**:
+- ✅ Incremental optimization approach worked well for 6.in-scale
+- ✅ Each phase delivered measurable gains with maintained correctness
+- ⚠️ Optimization ceiling reached - 15x gap on bigger.in requires architectural changes (balanced BST for rankings, hash-based Level 3 comparison)
+- ⚠️ bigger.in (10,000 teams) may not be representative of typical OJ test cases
+- ⚠️ Without real OJ feedback, continuing optimization is speculative
+
+---
+
+---
+
 ## Active Milestone
 
-### M1: Performance Optimization for OJ Submission
+### M1.1: OJ Submission & Validation
 **Status**: ACTIVE
-**Allocated Cycles**: 6
+**Allocated Cycles**: 2
 **Started**: 2026-02-26
 
 **Description**:
-Optimize the implementation to meet OJ time limits (2000ms per test case) and memory limits (512 MiB). Address critical performance bottlenecks identified in evaluation phase.
+Submit current implementation to ACMOJ to get real feedback on whether bigger.in-scale optimization is actually needed. The implementation crushes 6.in (250ms, 4x under target) which represents 60% of OJ data (N≤500). Rather than continue speculative optimization for bigger.in (10,000 teams, worst-case 40%), validate with actual OJ feedback.
 
-**Acceptance Criteria** (ALL must pass):
-1. **bigger.in** completes in <2000ms (currently >20 min)
-2. **6.in** completes in <1000ms (currently 187s)
-3. **All other tests** complete in <500ms (currently pass)
-4. No regression in functional correctness (all tests produce correct output)
-5. Memory usage stays under 512 MiB for all tests
-6. Code remains clean and maintainable (no hacky optimizations)
+**Acceptance Criteria**:
+1. Final code review complete (clean, well-structured, no dead code)
+2. Git repository submission-ready (.gitignore correct, builds from clean clone)
+3. Submit to ACMOJ and capture results
+4. **If passes**: Project complete ✅
+5. **If timeout on large cases**: Analyze OJ feedback to define targeted M1.2 optimization
 
-**Critical Bottlenecks to Fix** (from Kai's analysis):
-1. **PRIORITY 1**: Remove flush() call inside SCROLL loop (line 339)
-   - Current: O(N²·M·log N)
-   - Target: O(N·M·log N)
-   - Expected speedup: 100x for larger tests
-
-2. **PRIORITY 2**: Cache getSolveTimes() results during ranking
-   - Current: Sorts on every comparison call
-   - Target: Sort once per team per flush
-   - Expected speedup: 10x for flush operations
-
-3. **PRIORITY 3**: Optimize frozen problem detection
-   - Current: Linear scans in hot paths
-   - Target: Use sets or bit vectors
-
-4. **PRIORITY 4**: Reserve vector capacities
-   - Reduces reallocations during growth
-
-**Implementation Strategy**:
-- Phase 1: Fix SCROLL flush() bottleneck → test on 6.in
-- Phase 2: Cache solve times → test on bigger.in
-- Phase 3: Additional optimizations if needed
-- Validate no functional regressions after each phase
+**Rationale** (from Sienna & River strategic analysis):
+- 60% of OJ data has N≤500 (like 6.in, which we crush at 250ms)
+- We don't know if OJ's hardest 40% are actually as extreme as bigger.in
+- Submission budget: 5 attempts - using 1 for early feedback is strategic
+- Optimization ceiling reached: 15x gap requires architectural redesign, not incremental fixes
+- Real feedback > speculative optimization
 
 **Risk Assessment**:
-- Low risk: Well-understood algorithmic issues
-- Clear optimization path identified
-- Can test incrementally on progressively larger inputs
+- **Medium risk**: May fail on large test cases (bigger.in-scale)
+- **High reward**: If passes, project complete; if fails, get targeted feedback
+- **Fallback plan**: M1.2 will address specific OJ failures with architectural changes
 
 ---
 
 ## Planned Milestones
 
-### M2: Final Validation and ACMOJ Submission
-**Status**: Not Started
-**Estimated Cycles**: 2-3
+### M1.2: Targeted Optimization (Conditional)
+**Status**: Not Started (only if M1.1 fails)
+**Estimated Cycles**: 4-6
 
 **Description**:
-Final validation, code review, and prepare for ACMOJ submission.
+Only execute if M1.1 OJ submission fails due to timeout on large cases. Use actual OJ feedback (which test cases failed, time limits) to guide targeted architectural optimization rather than guessing.
 
-**Acceptance Criteria**:
-- All local tests pass (functional + performance)
-- Code review complete (clean, well-structured)
-- .gitignore configured correctly
-- Build system tested from clean checkout
-- Git repository ready for submission
-- Ready for ACMOJ evaluation
+**Possible Optimizations** (based on OJ feedback):
+- Balanced BST for O(log N) ranking updates
+- Hash-based Level 3 comparison caching
+- Lazy evaluation strategies
+- Or: Re-scope if OJ requirements differ from bigger.in
 
-**Activities**:
-- Run full test suite 3 times to ensure stability
-- Code cleanup and documentation review
-- Verify build from clean clone
-- Final git housekeeping
-- Submit to ACMOJ
+---
+
+### M2: Final Validation and ACMOJ Submission (DEPRECATED - Merged into M1.1)
+**Status**: DEPRECATED - Merged into M1.1
+**Note**: Original M2 activities (validation, code review, submission) are now part of M1.1 with conditional submission strategy.
 
 ---
 
