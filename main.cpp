@@ -292,6 +292,73 @@ public:
         }
     }
 
+    // Phase 5.2: Incremental ranking update for single team
+    // When one team improves (solves a problem), find its new position without full re-sort
+    // Complexity: O(N) instead of O(N log N)
+    void updateRankingsIncremental(const string& changed_team_name, int old_rank) {
+        Team& changed_team = teams[changed_team_name];
+
+        // Find where this team should be inserted by comparing with teams ranked higher
+        int new_rank = old_rank;
+
+        // Scan upward from old position to find new position
+        for (int rank = old_rank - 1; rank >= 1; rank--) {
+            const string& compare_team_name = rankings[rank - 1].first;
+            Team& compare_team = teams[compare_team_name];
+
+            // Use same comparison logic as sort
+            bool changed_is_better = false;
+
+            // More solved problems rank higher
+            if (changed_team.solved_count != compare_team.solved_count) {
+                changed_is_better = changed_team.solved_count > compare_team.solved_count;
+            }
+            // Less penalty time rank higher
+            else if (changed_team.penalty_time != compare_team.penalty_time) {
+                changed_is_better = changed_team.penalty_time < compare_team.penalty_time;
+            }
+            // Compare solve times
+            else {
+                const vector<int>& times_changed = changed_team.getSolveTimes();
+                const vector<int>& times_compare = compare_team.getSolveTimes();
+
+                size_t min_len = min(times_changed.size(), times_compare.size());
+                bool found_diff = false;
+                for (size_t i = 0; i < min_len; i++) {
+                    if (times_changed[i] != times_compare[i]) {
+                        changed_is_better = times_changed[i] < times_compare[i];
+                        found_diff = true;
+                        break;
+                    }
+                }
+
+                // Lexicographic comparison
+                if (!found_diff) {
+                    changed_is_better = changed_team.name < compare_team.name;
+                }
+            }
+
+            if (changed_is_better) {
+                new_rank = rank;
+            } else {
+                break; // Found the position
+            }
+        }
+
+        // If position changed, update rankings
+        if (new_rank < old_rank) {
+            // Remove from old position
+            rankings.erase(rankings.begin() + (old_rank - 1));
+            // Insert at new position
+            rankings.insert(rankings.begin() + (new_rank - 1), {changed_team_name, new_rank});
+
+            // Update rank numbers for affected teams
+            for (int i = new_rank - 1; i < (int)rankings.size(); i++) {
+                rankings[i].second = i + 1;
+            }
+        }
+    }
+
     bool freeze() {
         if (is_frozen) {
             cout << "[Error]Freeze failed: scoreboard has been frozen." << endl;
@@ -397,10 +464,10 @@ public:
             // If no problem was solved, ranking can only stay same or get worse (more penalty)
             // Only check ranking changes if a problem became newly solved
             if (problem_solved) {
-                // Phase 4.2 optimization: Only update rankings if problem became solved
-                // If no new problem was solved, ranking cannot improve (only wrong attempts revealed)
-                // Eliminates 31.7% overhead from unnecessary ranking updates
-                updateRankingsOnly();
+                // Phase 5.2 optimization: Incremental ranking update instead of full re-sort
+                // Only update the position of the changed team instead of sorting all N teams
+                // Reduces complexity from O(N log N) to O(N)
+                updateRankingsIncremental(target_team, old_rank);
 
                 // Check if ranking changed
                 int new_rank = -1;
