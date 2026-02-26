@@ -231,6 +231,47 @@ public:
         }
     }
 
+    // Phase 1 optimization: Update rankings without recalculating all team stats
+    // Used in SCROLL to avoid O(N*M) recalculation overhead
+    void updateRankingsOnly() {
+        // Create ranking
+        vector<Team*> team_ptrs;
+        for (auto& pair : teams) {
+            team_ptrs.push_back(&pair.second);
+        }
+
+        // Sort teams using same comparison logic as flush()
+        sort(team_ptrs.begin(), team_ptrs.end(), [](Team* a, Team* b) {
+            // More solved problems rank higher
+            if (a->solved_count != b->solved_count) {
+                return a->solved_count > b->solved_count;
+            }
+            // Less penalty time rank higher
+            if (a->penalty_time != b->penalty_time) {
+                return a->penalty_time < b->penalty_time;
+            }
+            // Compare solve times
+            vector<int> times_a = a->getSolveTimes();
+            vector<int> times_b = b->getSolveTimes();
+
+            size_t min_len = min(times_a.size(), times_b.size());
+            for (size_t i = 0; i < min_len; i++) {
+                if (times_a[i] != times_b[i]) {
+                    return times_a[i] < times_b[i];
+                }
+            }
+
+            // Lexicographic comparison
+            return a->name < b->name;
+        });
+
+        // Update rankings
+        rankings.clear();
+        for (size_t i = 0; i < team_ptrs.size(); i++) {
+            rankings.push_back({team_ptrs[i]->name, i + 1});
+        }
+    }
+
     bool freeze() {
         if (is_frozen) {
             cout << "[Error]Freeze failed: scoreboard has been frozen." << endl;
@@ -335,8 +376,8 @@ public:
             // Recalculate team stats
             team.recalculateStats();
 
-            // Flush to update rankings (silently)
-            flush(true);
+            // Phase 1 optimization: Update rankings only (without recalculating all teams)
+            updateRankingsOnly();
 
             // Check if ranking changed
             int new_rank = -1;
